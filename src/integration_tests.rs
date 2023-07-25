@@ -2,6 +2,7 @@
 mod tests {
     use crate::helpers::CwTemplateContract;
     use crate::msg::InstantiateMsg;
+    use andromeda_std::testing::mock_querier::MOCK_KERNEL_CONTRACT;
     use cosmwasm_std::{Addr, Coin, Empty, Uint128};
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 
@@ -38,7 +39,11 @@ mod tests {
         let mut app = mock_app();
         let cw_template_id = app.store_code(contract_template());
 
-        let msg = InstantiateMsg { count: 1i32 };
+        let msg = InstantiateMsg {
+            count: 1i32,
+            kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
+            owner: None,
+        };
         let cw_template_contract_addr = app
             .instantiate_contract(
                 cw_template_id,

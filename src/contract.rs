@@ -2,16 +2,16 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{% raw %}{{% endraw %}{% unless minimal %}to_binary, {% endunless %}Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use andromeda_std::{
-    ado_base::{AndromedaMsg, AndromedaQuery},
+    ado_base::InstantiateMsg as BaseInstantiateMsg,
     ado_contract::{
         permissioning::{is_context_permissioned, is_context_permissioned_strict},
         ADOContract,
     },
     common::context::ExecuteContext,
+    error::ContractError,
 };
 {% if minimal %}// {% endif %}use cw2::set_contract_version;
 
-use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, {% unless minimal %}GetCountResponse, {% endunless %}InstantiateMsg, QueryMsg};
 {% unless minimal %}use crate::state::{State, STATE};
 {% endunless %}
@@ -23,12 +23,12 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 {% endif %}
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    {% if minimal %}_{% endif %}deps: DepsMut,
-    _env: Env,
-    {% if minimal %}_{% endif %}info: MessageInfo,
-    {% if minimal %}_{% endif %}msg: InstantiateMsg,
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    {% if minimal %}unimplemented!(){% else %}let state = State {
+    let state = State {
         count: msg.count,
         owner: info.sender.clone(),
     };
@@ -53,12 +53,12 @@ pub fn instantiate(
 
     Ok(resp
         .add_attribute("method", "instantiate")
-        .add_attribute("owner", info.sender))
-        .add_attribute("count", msg.count.to_string())){% endif %}
+        .add_attribute("owner", info.sender)
+        .add_attribute("count", msg.count.to_string()))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) {
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> Result<Response, ContractError> {
     let ctx = ExecuteContext::new(deps, info, env);
     if let ExecuteMsg::AMPReceive(pkt) = msg {
         ADOContract::default().execute_amp_receive(
@@ -76,8 +76,8 @@ pub fn handle_execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Increment {} => execute::increment(ctx.deps),
-        ExecuteMsg::Reset { count } => execute::reset(ctx.deps, ctx.info, count),
+        ExecuteMsg::Increment {} => execute::increment(ctx),
+        ExecuteMsg::Reset { count } => execute::reset(ctx, count),
         _ => ADOContract::default().execute(ctx, msg)
     }
 }{% unless minimal %}
@@ -109,17 +109,17 @@ pub mod execute {
 }{% endunless %}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query({% if minimal %}_{% endif %}deps: Deps, _env: Env, {% if minimal %}_{% endif %}msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     {% if minimal %}unimplemented!(){% else %}match msg {
-        QueryMsg::GetCount {} => to_binary(&query::count(deps)?),
-        _ => ADOContract::default().query(deps, env, msg);
+        QueryMsg::GetCount {} => Ok(to_binary(&query::count(deps)?)?),
+        _ => ADOContract::default().query(deps, env, msg),
     }{% endif %}
 }{% unless minimal %}
 
 pub mod query {
     use super::*;
 
-    pub fn count(deps: Deps) -> StdResult<GetCountResponse> {
+    pub fn count(deps: Deps) -> Result<GetCountResponse, ContractError> {
         let state = STATE.load(deps.storage)?;
         Ok(GetCountResponse { count: state.count })
     }
@@ -128,6 +128,7 @@ pub mod query {
 #[cfg(test)]
 mod tests {% raw %}{{% endraw %}{% unless minimal %}
     use super::*;
+    use andromeda_std::testing::mock_querier::MOCK_KERNEL_CONTRACT;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{coins, from_binary};
 
@@ -135,7 +136,11 @@ mod tests {% raw %}{{% endraw %}{% unless minimal %}
     fn proper_initialization() {
         let mut deps = mock_dependencies();
 
-        let msg = InstantiateMsg { count: 17 };
+        let msg = InstantiateMsg {
+            count: 17,
+            kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
+            owner: None,
+        };
         let info = mock_info("creator", &coins(1000, "earth"));
 
         // we can just call .unwrap() to assert this was a success
@@ -152,7 +157,11 @@ mod tests {% raw %}{{% endraw %}{% unless minimal %}
     fn increment() {
         let mut deps = mock_dependencies();
 
-        let msg = InstantiateMsg { count: 17 };
+        let msg = InstantiateMsg {
+            count: 17,
+            kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
+            owner: None,
+        };
         let info = mock_info("creator", &coins(2, "token"));
         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
@@ -171,7 +180,11 @@ mod tests {% raw %}{{% endraw %}{% unless minimal %}
     fn reset() {
         let mut deps = mock_dependencies();
 
-        let msg = InstantiateMsg { count: 17 };
+        let msg = InstantiateMsg {
+            count: 17,
+            kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
+            owner: None,
+        };
         let info = mock_info("creator", &coins(2, "token"));
         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
@@ -193,5 +206,5 @@ mod tests {% raw %}{{% endraw %}{% unless minimal %}
         let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
         let value: GetCountResponse = from_binary(&res).unwrap();
         assert_eq!(5, value.count);
-    }
+}
 {% endunless %}}
