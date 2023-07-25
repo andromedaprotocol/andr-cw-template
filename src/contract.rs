@@ -30,7 +30,7 @@ pub fn instantiate(
     {% unless minimal %}let state = State {
         count: msg.count,
         owner: info.sender.clone(),
-    };
+    };{% endunless %}
     
     STATE.save(deps.storage, &state)?;{% endunless %}
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
