@@ -10,17 +10,16 @@ use andromeda_std::{
     common::context::ExecuteContext,
     error::ContractError,
 };
-{% if minimal %}// {% endif %}use cw2::set_contract_version;
+use cw2::set_contract_version;
 
 use crate::msg::{ExecuteMsg, {% unless minimal %}GetCountResponse, {% endunless %}InstantiateMsg, QueryMsg};
 {% unless minimal %}use crate::state::{State, STATE};
 {% endunless %}
-{% if minimal %}/*
-{% endif %}// version info for migration info
+
+// version info for migration info
 const CONTRACT_NAME: &str = "crates.io:{{project-name}}";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-{% if minimal %}*/
-{% endif %}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -28,13 +27,13 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    let state = State {
+    {% unless minimal %}let state = State {
         count: msg.count,
         owner: info.sender.clone(),
     };
+    
+    STATE.save(deps.storage, &state)?;{% endunless %}
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    STATE.save(deps.storage, &state)?;
-
     let contract = ADOContract::default();
 
     let resp = contract.instantiate(
