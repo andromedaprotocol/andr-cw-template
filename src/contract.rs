@@ -53,7 +53,7 @@ pub fn instantiate(
     Ok(resp
         .add_attribute("method", "instantiate")
         .add_attribute("owner", info.sender)
-        .add_attribute("count", msg.count.to_string()))
+        {% unless minimal %}.add_attribute("count", msg.count.to_string()){% endunless %})
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
