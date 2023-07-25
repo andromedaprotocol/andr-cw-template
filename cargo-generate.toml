@@ -12,6 +12,13 @@ The minimal template assumes you already know how to write your own logic, and d
 Would you like to generate the minimal template?"""
 default = false
 
+[placeholders.permissioned]
+type = "bool"
+prompt = """Actions in an ADO may be permissioned, this is an optional feature.
+
+Would you like to add permissioning to your ADO?"""
+default = true
+
 [conditional.'minimal']
 ignore = [
     "Developing.md",

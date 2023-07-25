@@ -1,10 +1,10 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{% raw %}{{% endraw %}{% unless minimal %}to_binary, {% endunless %}Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{% raw %}{{% endraw %}{% unless minimal %}to_binary, {% endunless %}Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, ensure};
 use andromeda_std::{
     ado_base::InstantiateMsg as BaseInstantiateMsg,
     ado_contract::{
-        permissioning::{is_context_permissioned, is_context_permissioned_strict},
+        permissioning::{is_context_permissioned},
         ADOContract,
     },
     common::context::ExecuteContext,
@@ -75,6 +75,18 @@ pub fn handle_execute(
     ctx: ExecuteContext,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
+    {% if permissioned %}
+    ensure!(
+        is_context_permissioned(
+            ctx.deps.storage,
+            &ctx.info,
+            &ctx.env,
+            &ctx.amp_ctx,
+            msg.as_ref()
+        )?,
+        ContractError::Unauthorized {}
+    );
+    {% endif %}
     match msg {
         ExecuteMsg::Increment {} => execute::increment(ctx),
         ExecuteMsg::Reset { count } => execute::reset(ctx, count),
