@@ -88,8 +88,8 @@ pub fn handle_execute(
     );
     {% endif %}
     match msg {
-        {% if !minimal %}ExecuteMsg::Increment {} => execute::increment(ctx),
-        ExecuteMsg::Reset { count } => execute::reset(ctx, count),{% endif %}
+        {% unless minimal %}ExecuteMsg::Increment {} => execute::increment(ctx),
+        ExecuteMsg::Reset { count } => execute::reset(ctx, count),{% endunless %}
         _ => ADOContract::default().execute(ctx, msg)
     }
 }{% unless minimal %}
@@ -123,7 +123,7 @@ pub mod execute {
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        {% if !minimal %}QueryMsg::GetCount {} => Ok(to_binary(&query::count(deps)?)?),{% endif %}
+        {% unless minimal %}QueryMsg::GetCount {} => Ok(to_binary(&query::count(deps)?)?),{% endunless %}
         _ => ADOContract::default().query(deps, env, msg),
     }
 }{% unless minimal %}
