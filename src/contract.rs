@@ -1,6 +1,14 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{% raw %}{{% endraw %}{% unless minimal %}to_binary, {% endunless %}Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use andromeda_std::{
+    ado_base::{AndromedaMsg, AndromedaQuery},
+    ado_contract::{
+        permissioning::{is_context_permissioned, is_context_permissioned_strict},
+        ADOContract,
+    },
+    common::context::ExecuteContext,
+};
 {% if minimal %}// {% endif %}use cw2::set_contract_version;
 
 use crate::error::ContractError;
@@ -27,29 +35,58 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     STATE.save(deps.storage, &state)?;
 
-    Ok(Response::new()
+    let contract = ADOContract::default();
+
+    let resp = contract.instantiate(
+        deps.storage,
+        env,
+        deps.api,
+        info.clone(),
+        BaseInstantiateMsg {
+            ado_type: env!("CARGO_PKG_NAME").to_string(),
+            ado_version: CONTRACT_VERSION.to_string(),
+            operators: None,
+            kernel_address: msg.kernel_address,
+            owner: msg.owner,
+        },
+    )?;
+
+    Ok(resp
         .add_attribute("method", "instantiate")
-        .add_attribute("owner", info.sender)
+        .add_attribute("owner", info.sender))
         .add_attribute("count", msg.count.to_string())){% endif %}
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(
-    {% if minimal %}_{% endif %}deps: DepsMut,
-    _env: Env,
-    {% if minimal %}_{% endif %}info: MessageInfo,
-    {% if minimal %}_{% endif %}msg: ExecuteMsg,
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) {
+    let ctx = ExecuteContext::new(deps, info, env);
+    if let ExecuteMsg::AMPReceive(pkt) = msg {
+        ADOContract::default().execute_amp_receive(
+            ctx,
+            pkt,
+            handle_execute,
+        )
+    } else {
+        handle_execute(ctx, msg)
+    }
+}
+
+pub fn handle_execute(
+    ctx: ExecuteContext,
+    msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    {% if minimal %}unimplemented!(){% else %}match msg {
-        ExecuteMsg::Increment {} => execute::increment(deps),
-        ExecuteMsg::Reset { count } => execute::reset(deps, info, count),
-    }{% endif %}
+    match msg {
+        ExecuteMsg::Increment {} => execute::increment(ctx.deps),
+        ExecuteMsg::Reset { count } => execute::reset(ctx.deps, ctx.info, count),
+        _ => ADOContract::default().execute(ctx, msg)
+    }
 }{% unless minimal %}
 
 pub mod execute {
     use super::*;
 
-    pub fn increment(deps: DepsMut) -> Result<Response, ContractError> {
+    pub fn increment(ctx: ExecuteContext) -> Result<Response, ContractError> {
+        let ExecuteContext { deps, .. } = ctx;
         STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
             state.count += 1;
             Ok(state)
@@ -58,7 +95,8 @@ pub mod execute {
         Ok(Response::new().add_attribute("action", "increment"))
     }
 
-    pub fn reset(deps: DepsMut, info: MessageInfo, count: i32) -> Result<Response, ContractError> {
+    pub fn reset(ctx: ExecuteContext, count: i32) -> Result<Response, ContractError> {
+        let ExecuteContext { deps, info, .. } = ctx;
         STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
             if info.sender != state.owner {
                 return Err(ContractError::Unauthorized {});
@@ -74,6 +112,7 @@ pub mod execute {
 pub fn query({% if minimal %}_{% endif %}deps: Deps, _env: Env, {% if minimal %}_{% endif %}msg: QueryMsg) -> StdResult<Binary> {
     {% if minimal %}unimplemented!(){% else %}match msg {
         QueryMsg::GetCount {} => to_binary(&query::count(deps)?),
+        _ => ADOContract::default().query(deps, env, msg);
     }{% endif %}
 }{% unless minimal %}
 
