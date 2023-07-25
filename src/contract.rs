@@ -43,7 +43,7 @@ pub fn instantiate(
         deps.api,
         info.clone(),
         BaseInstantiateMsg {
-            ado_type: env!("CARGO_PKG_NAME").to_string(),
+            ado_type: "{{project-name}}".to_string(),
             ado_version: CONTRACT_VERSION.to_string(),
             operators: None,
             kernel_address: msg.kernel_address,
@@ -88,8 +88,8 @@ pub fn handle_execute(
     );
     {% endif %}
     match msg {
-        ExecuteMsg::Increment {} => execute::increment(ctx),
-        ExecuteMsg::Reset { count } => execute::reset(ctx, count),
+        {% if !minimal %}ExecuteMsg::Increment {} => execute::increment(ctx),
+        ExecuteMsg::Reset { count } => execute::reset(ctx, count),{% endif %}
         _ => ADOContract::default().execute(ctx, msg)
     }
 }{% unless minimal %}
@@ -122,10 +122,10 @@ pub mod execute {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
-    {% if minimal %}unimplemented!(){% else %}match msg {
-        QueryMsg::GetCount {} => Ok(to_binary(&query::count(deps)?)?),
+    match msg {
+        {% if !minimal %}QueryMsg::GetCount {} => Ok(to_binary(&query::count(deps)?)?),{% endif %}
         _ => ADOContract::default().query(deps, env, msg),
-    }{% endif %}
+    }
 }{% unless minimal %}
 
 pub mod query {
