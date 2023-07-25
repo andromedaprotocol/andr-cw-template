@@ -1,4 +1,6 @@
-# CosmWasm Starter Pack
+# Andromeda CosmWasm Starter Pack
+
+*This repo is a variant of the [CosmWasm starter template](https://github.com/CosmWasm/cw-template).*
 
 This is a template to build smart contracts in Rust to run inside a
 [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) module on all chains that enable it.
@@ -27,27 +29,13 @@ Go to the folder in which you want to place it and run:
 **Latest**
 
 ```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --name PROJECT_NAME
+cargo generate --git https://github.com/andromedaprotocol/andr-cw-template.git --name PROJECT_NAME
 ```
 
 For cloning minimal code repo:
 
 ```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --name PROJECT_NAME -d minimal=true
-```
-
-**Older Version**
-
-Pass version as branch flag:
-
-```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --branch <version> --name PROJECT_NAME
-```
-
-Example:
-
-```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --branch 0.16 --name PROJECT_NAME
+cargo generate --git https://github.com/andromedaprotocol/andr-cw-template.git --name PROJECT_NAME -d minimal=true
 ```
 
 You will now have a new folder called `PROJECT_NAME` (I hope you changed that to something else)
