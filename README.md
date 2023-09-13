@@ -5,6 +5,9 @@
 ## Documentation
 To see what's involved in making an ADO check out our documentation [here](https://docs.andromedaprotocol.io/andromeda/creating-an-ado/getting-started).
 
+
+# CosmWasm Template ReadMe
+
 This is a template to build smart contracts in Rust to run inside a
 [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) module on all chains that enable it.
 To understand the framework better, please read the overview in the
