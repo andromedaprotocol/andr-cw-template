@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{{% unless minimal %}to_binary, {% endunless %}Binary, Deps, DepsMut, Env, MessageInfo, Response, ensure};
+use cosmwasm_std::{% raw %}{{% endraw %}{% unless minimal %}to_binary, {% endunless %}Binary, Deps, DepsMut, Env, MessageInfo, Response, ensure};
 use andromeda_std::{
     ado_base::InstantiateMsg as BaseInstantiateMsg,
     ado_contract::{
@@ -30,7 +30,7 @@ pub fn instantiate(
     {% unless minimal %}let state = State {
         count: msg.count,
         owner: info.sender.clone(),
-    };{% endunless %}
+    };
     
     STATE.save(deps.storage, &state)?;{% endunless %}
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
@@ -91,8 +91,9 @@ pub fn handle_execute(
         ExecuteMsg::Reset { count } => execute::reset(ctx, count),{% endunless %}
         _ => ADOContract::default().execute(ctx, msg)
     }
-}{% unless minimal %}
+}
 
+{% unless minimal %}
 pub mod execute {
     use super::*;
 
