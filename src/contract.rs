@@ -7,7 +7,7 @@ use andromeda_std::{
         permissioning::{is_context_permissioned},
         ADOContract,
     },
-    common::context::ExecuteContext,
+    common::{actions::call_action, context::ExecuteContext},
     error::ContractError,
 };
 use cw2::set_contract_version;
@@ -33,7 +33,7 @@ pub fn instantiate(
     };
     
     STATE.save(deps.storage, &state)?;{% endunless %}
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     let contract = ADOContract::default();
 
     let resp = contract.instantiate(
@@ -42,7 +42,7 @@ pub fn instantiate(
         deps.api,
         info.clone(),
         BaseInstantiateMsg {
-            ado_type: "{{project-name}}".to_string(),
+            ado_type: CONTRACT_NAME.to_string(),
             ado_version: CONTRACT_VERSION.to_string(),
             operators: None,
             kernel_address: msg.kernel_address,
@@ -74,23 +74,24 @@ pub fn handle_execute(
     ctx: ExecuteContext,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    {% if permissioned %}
-    ensure!(
-        is_context_permissioned(
-            ctx.deps.storage,
-            &ctx.info,
-            &ctx.env,
-            &ctx.amp_ctx,
-            msg.as_ref()
-        )?,
-        ContractError::Unauthorized {}
-    );
-    {% endif %}
-    match msg {
+    let action_response = call_action(
+        &mut ctx.deps,
+        &ctx.info,
+        &ctx.env,
+        &ctx.amp_ctx,
+        msg.as_ref(),
+    )?;
+
+    let res = match msg {
         {% unless minimal %}ExecuteMsg::Increment {} => execute::increment(ctx),
         ExecuteMsg::Reset { count } => execute::reset(ctx, count),{% endunless %}
         _ => ADOContract::default().execute(ctx, msg)
-    }
+    };
+
+    Ok(res
+        .add_submessages(action_response.messages)
+        .add_attributes(action_response.attributes)
+        .add_events(action_response.events))
 }
 
 {% unless minimal %}
