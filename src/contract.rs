@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{% raw %}{{% endraw %}{% unless minimal %}to_binary, {% endunless %}Binary, Deps, DepsMut, Env, MessageInfo, Response};
+use cosmwasm_std::{% raw %}{{% endraw %}{% unless minimal %}to_json_binary, {% endunless %}Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use andromeda_std::{
     ado_base::InstantiateMsg as BaseInstantiateMsg,
     ado_contract::{
@@ -122,7 +122,7 @@ pub mod execute {
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        {% unless minimal %}QueryMsg::GetCount {} => Ok(to_binary(&query::count(deps)?)?),{% endunless %}
+        {% unless minimal %}QueryMsg::GetCount {} => Ok(to_json_binary(&query::count(deps)?)?),{% endunless %}
         _ => ADOContract::default().query(deps, env, msg),
     }
 }{% unless minimal %}
