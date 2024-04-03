@@ -1,16 +1,14 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{% raw %}{{% endraw %}{% unless minimal %}to_binary, {% endunless %}Binary, Deps, DepsMut, Env, MessageInfo, Response, ensure};
+use cosmwasm_std::{% raw %}{{% endraw %}{% unless minimal %}to_binary, {% endunless %}Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use andromeda_std::{
     ado_base::InstantiateMsg as BaseInstantiateMsg,
     ado_contract::{
-        permissioning::{is_context_permissioned},
         ADOContract,
     },
     common::{actions::call_action, context::ExecuteContext},
     error::ContractError,
 };
-use cw2::set_contract_version;
 
 use crate::msg::{ExecuteMsg, {% unless minimal %}GetCountResponse, {% endunless %}InstantiateMsg, QueryMsg};
 {% unless minimal %}use crate::state::{State, STATE};
@@ -40,11 +38,11 @@ pub fn instantiate(
         deps.storage,
         env,
         deps.api,
+        &deps.querier,
         info.clone(),
         BaseInstantiateMsg {
             ado_type: CONTRACT_NAME.to_string(),
             ado_version: CONTRACT_VERSION.to_string(),
-            operators: None,
             kernel_address: msg.kernel_address,
             owner: msg.owner,
         },
@@ -71,7 +69,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 }
 
 pub fn handle_execute(
-    ctx: ExecuteContext,
+    ctx: mut ExecuteContext,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     let action_response = call_action(
@@ -86,7 +84,7 @@ pub fn handle_execute(
         {% unless minimal %}ExecuteMsg::Increment {} => execute::increment(ctx),
         ExecuteMsg::Reset { count } => execute::reset(ctx, count),{% endunless %}
         _ => ADOContract::default().execute(ctx, msg)
-    };
+    }?;
 
     Ok(res
         .add_submessages(action_response.messages)
