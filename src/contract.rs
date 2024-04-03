@@ -69,7 +69,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> R
 }
 
 pub fn handle_execute(
-    ctx: mut ExecuteContext,
+    mut ctx: ExecuteContext,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     let action_response = call_action(
