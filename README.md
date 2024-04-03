@@ -3,8 +3,8 @@
 **This repo is a variant of the [CosmWasm starter template](https://github.com/CosmWasm/cw-template).**
 
 ## Documentation
-To see what's involved in making an ADO check out our documentation [here](https://docs.andromedaprotocol.io/andromeda/creating-an-ado/getting-started).
 
+To see what's involved in making an ADO check out our documentation [here](https://docs.andromedaprotocol.io/andromeda/creating-an-ado/getting-started).
 
 # CosmWasm Template ReadMe
 
@@ -89,5 +89,5 @@ to the world, once you are ready to deploy it on a running blockchain. And
 that have been published.
 
 Please replace this README file with information about your specific project. You can keep
-the `Developing.md` and `Publishing.md` files as useful referenced, but please set some
+the `Developing.md` and `Publishing.md` files as useful references, but please set some
 proper description in the README.

@@ -142,7 +142,7 @@ mod tests {% raw %}{{% endraw %}{% unless minimal %}
     use super::*;
     use andromeda_std::testing::mock_querier::MOCK_KERNEL_CONTRACT;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coins, from_binary};
+    use cosmwasm_std::{coins, from_json};
 
     #[test]
     fn proper_initialization() {
@@ -161,7 +161,7 @@ mod tests {% raw %}{{% endraw %}{% unless minimal %}
 
         // it worked, let's query the state
         let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: GetCountResponse = from_binary(&res).unwrap();
+        let value: GetCountResponse = from_json(&res).unwrap();
         assert_eq!(17, value.count);
     }
 
@@ -184,7 +184,7 @@ mod tests {% raw %}{{% endraw %}{% unless minimal %}
 
         // should increase counter by 1
         let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: GetCountResponse = from_binary(&res).unwrap();
+        let value: GetCountResponse = from_json(&res).unwrap();
         assert_eq!(18, value.count);
     }
 
@@ -216,7 +216,7 @@ mod tests {% raw %}{{% endraw %}{% unless minimal %}
 
         // should now be 5
         let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: GetCountResponse = from_binary(&res).unwrap();
+        let value: GetCountResponse = from_json(&res).unwrap();
         assert_eq!(5, value.count);
 }
 {% endunless %}}
