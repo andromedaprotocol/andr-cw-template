@@ -6,7 +6,7 @@ use andromeda_std::{
     ado_contract::{
         ADOContract,
     },
-    common::{actions::call_action, context::ExecuteContext},
+    common::context::ExecuteContext,
     error::ContractError,
 };
 
@@ -54,42 +54,15 @@ pub fn instantiate(
         {% unless minimal %}.add_attribute("count", msg.count.to_string()){% endunless %})
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> Result<Response, ContractError> {
-    let ctx = ExecuteContext::new(deps, info, env);
-    if let ExecuteMsg::AMPReceive(pkt) = msg {
-        ADOContract::default().execute_amp_receive(
-            ctx,
-            pkt,
-            handle_execute,
-        )
-    } else {
-        handle_execute(ctx, msg)
-    }
-}
-
-pub fn handle_execute(
-    mut ctx: ExecuteContext,
-    msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
-    let action_response = call_action(
-        &mut ctx.deps,
-        &ctx.info,
-        &ctx.env,
-        &ctx.amp_ctx,
-        msg.as_ref(),
-    )?;
-
-    let res = match msg {
+#[andromeda_std::andr_execute_fn]
+pub fn execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, ContractError> {
+    match msg {
         {% unless minimal %}ExecuteMsg::Increment {} => execute::increment(ctx),
         ExecuteMsg::Reset { count } => execute::reset(ctx, count),{% endunless %}
         _ => ADOContract::default().execute(ctx, msg)
-    }?;
+    }
 
-    Ok(res
-        .add_submessages(action_response.messages)
-        .add_attributes(action_response.attributes)
-        .add_events(action_response.events))
+    Ok(res)
 }
 
 {% unless minimal %}
