@@ -61,8 +61,6 @@ pub fn execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, Contrac
         ExecuteMsg::Reset { count } => execute::reset(ctx, count),{% endunless %}
         _ => ADOContract::default().execute(ctx, msg)
     }
-
-    Ok(res)
 }
 
 {% unless minimal %}
