@@ -47,3 +47,4 @@ andromeda-std = { git = "https://github.com/andromedaprotocol/andromeda-core.git
 
 [dev-dependencies]
 cw-multi-test = "1.0.0"
+andromeda-testing = { git = "https://github.com/andromedaprotocol/andromeda-core.git", branch = "main" }

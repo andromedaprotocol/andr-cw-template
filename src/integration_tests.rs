@@ -2,9 +2,13 @@
 mod tests {
     use crate::helpers::CwTemplateContract;
     use crate::msg::InstantiateMsg;
-    use andromeda_std::testing::mock_querier::MOCK_KERNEL_CONTRACT;
-    use cosmwasm_std::{testing::MockApi, Addr, Coin, Empty, Uint128};
-    use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+    use andromeda_testing::{
+        mock::{mock_app, MockApp},
+        mock_builder::MockAndromedaBuilder,
+        MockAndromeda, MockContract,
+    };
+    use cosmwasm_std::{coin, Addr, Empty};
+    use cw_multi_test::{Contract, ContractWrapper, Executor};
 
     pub fn contract_template() -> Box<dyn Contract<Empty>> {
         let contract = ContractWrapper::new(
@@ -15,44 +19,34 @@ mod tests {
         Box::new(contract)
     }
 
-    const USER: &str = "USER";
-    const ADMIN: &str = "ADMIN";
+    const USER: &str = "useraddress";
+    const ADMIN: &str = "adminaddress";
     const NATIVE_DENOM: &str = "denom";
+    const CONTRACT_NAME: &str = "{{project-name}}";
 
-    fn mock_app() -> App {
-        AppBuilder::new().build(|router, _, storage| {
-            router
-                .bank
-                .init_balance(
-                    storage,
-                    &MockApi::default().addr_make(USER),
-                    vec![Coin {
-                        denom: NATIVE_DENOM.to_string(),
-                        amount: Uint128::new(1),
-                    }],
-                )
-                .unwrap();
-        })
+    fn setup() -> (MockApp, MockAndromeda) {
+        let mut router = mock_app(Some(vec![NATIVE_DENOM]));
+        let andr = MockAndromedaBuilder::new(&mut router, "admin")
+            .with_wallets(vec![
+                (ADMIN, vec![coin(1000, NATIVE_DENOM)]),
+                (USER, vec![]),
+            ])
+            .with_contracts(vec![(CONTRACT_NAME, contract_template())])
+            .build(&mut router);
+
+        (router, andr)
     }
 
-    fn proper_instantiate() -> (App, CwTemplateContract) {
-        let mut app = mock_app();
-        let cw_template_id = app.store_code(contract_template());
-
+    fn proper_instantiate() -> (MockApp, CwTemplateContract) {
+        let (mut app, andr) = setup();
+        let code_id = andr.get_code_id(&mut app, CONTRACT_NAME);
         let msg = InstantiateMsg {
             count: 1i32,
-            kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
+            kernel_address: andr.kernel.addr().to_string(),
             owner: None,
         };
         let cw_template_contract_addr = app
-            .instantiate_contract(
-                cw_template_id,
-                Addr::unchecked(ADMIN),
-                &msg,
-                &[],
-                "test",
-                None,
-            )
+            .instantiate_contract(code_id, app.api().addr_make(ADMIN), &msg, &[], "test", None)
             .unwrap();
 
         let cw_template_contract = CwTemplateContract(cw_template_contract_addr);
