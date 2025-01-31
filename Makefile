@@ -9,7 +9,7 @@ test-unit:
 # Runs integration tests
 test-integration:
 	@echo "Running integration tests..."
-	@cargo test -p e2e-tests --quiet
+	@cargo integration-test --workspace --quiet
 	@echo "Integration tests complete! \033[0;32m\xE2\x9C\x94\033[0m"
 
 # Runs all tests
@@ -23,7 +23,14 @@ lint:
 
 # Builds optimized WASM using Docker
 build:
-	docker run --rm -v "$(pwd)":/code \
-		--mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
+	docker run --rm -v "$${PWD}":/code \
+		--mount type=volume,source="$${PWD##*/}_cache",target=/target \
 		--mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
 		cosmwasm/optimizer:0.16.0
+
+# Builds optimized WASM using Docker (arm64)
+build-arm64:
+	docker run --rm -v "$${PWD}":/code \
+		--mount type=volume,source="$${PWD##*/}_cache",target=/target \
+		--mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+		cosmwasm/optimizer-arm64:0.16.0
