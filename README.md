@@ -4,7 +4,7 @@
 
 ## Documentation
 
-To see what's involved in making an ADO check out our documentation [here](https://docs.andromedaprotocol.io/andromeda/creating-an-ado/getting-started).
+To see what's involved in making an ADO check out our documentation [here](https://docs.andromedaprotocol.io/andromeda/developing-an-ado/getting-started).
 
 # CosmWasm Template ReadMe
 
@@ -63,11 +63,32 @@ git remote add origin YOUR-GIT-URL
 git push -u origin main
 ```
 
+## Testing
+
+The template comes with unit tests and integration tests, these can be run via the following commands:
+
+```sh
+# run all tests
+make test
+# run unit-tests
+make test-unit
+#run integration-test
+make test-integration
+```
+
+## Building
+
+To build your contract you can use the makefile:
+
+```sh
+make build
+# for arm64 processors use
+make build-arm
+```
+
 ## CI Support
 
-We have template configurations for both [GitHub Actions](.github/workflows/Basic.yml)
-and [Circle CI](.circleci/config.yml) in the generated project, so you can
-get up and running with CI right away.
+We have template configurations for [GitHub Actions](.github/workflows/Basic.yml) in the generated project, so you can get up and running with CI right away.
 
 One note is that the CI runs all `cargo` commands
 with `--locked` to ensure it uses the exact same versions as you have locally. This also means
