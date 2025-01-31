@@ -43,7 +43,7 @@ cw2 = "1.1.1"
 schemars = "0.8.15"
 serde = { version = "1.0.189", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.49" }
-andromeda-std = { version = "1.0.0-rc1" }
+andromeda-std = { git = "https://github.com/andromedaprotocol/andromeda-core.git", branch = "main" }
 
 [dev-dependencies]
 cw-multi-test = "2.0.0"
