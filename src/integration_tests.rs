@@ -25,7 +25,7 @@ mod tests {
                 .bank
                 .init_balance(
                     storage,
-                    &Addr::unchecked(USER),
+                    &MockApi::default().addr_make(USER),
                     vec![Coin {
                         denom: NATIVE_DENOM.to_string(),
                         amount: Uint128::new(1),
