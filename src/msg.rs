@@ -11,6 +11,7 @@ pub struct InstantiateMsg {% raw %}{{% endraw %}{% unless minimal %}
 #[cw_serde]
 pub enum ExecuteMsg {% raw %}{{% endraw %}{% unless minimal %}
     Increment {},
+    #[attrs(restricted)]
     Reset { count: i32 },
 {% endunless %}}
 
