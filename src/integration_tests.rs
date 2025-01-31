@@ -3,7 +3,7 @@ mod tests {
     use crate::helpers::CwTemplateContract;
     use crate::msg::InstantiateMsg;
     use andromeda_std::testing::mock_querier::MOCK_KERNEL_CONTRACT;
-    use cosmwasm_std::{Addr, Coin, Empty, Uint128};
+    use cosmwasm_std::{testing::MockApi, Addr, Coin, Empty, Uint128};
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 
     pub fn contract_template() -> Box<dyn Contract<Empty>> {
