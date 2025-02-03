@@ -10,7 +10,10 @@ pub struct InstantiateMsg {% raw %}{{% endraw %}{% unless minimal %}
 #[andr_exec]
 #[cw_serde]
 pub enum ExecuteMsg {% raw %}{{% endraw %}{% unless minimal %}
+    #[attrs(nonpayable)]
     Increment {},
+    // Reset can only be called by the owner and does not accept funds
+    #[attrs(restricted, nonpayable)]
     Reset { count: i32 },
 {% endunless %}}
 

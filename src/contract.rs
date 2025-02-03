@@ -6,7 +6,7 @@ use andromeda_std::{
     ado_contract::{
         ADOContract,
     },
-    common::{actions::call_action, context::ExecuteContext},
+    common::context::ExecuteContext,
     error::ContractError,
 };
 
@@ -54,42 +54,13 @@ pub fn instantiate(
         {% unless minimal %}.add_attribute("count", msg.count.to_string()){% endunless %})
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> Result<Response, ContractError> {
-    let ctx = ExecuteContext::new(deps, info, env);
-    if let ExecuteMsg::AMPReceive(pkt) = msg {
-        ADOContract::default().execute_amp_receive(
-            ctx,
-            pkt,
-            handle_execute,
-        )
-    } else {
-        handle_execute(ctx, msg)
-    }
-}
-
-pub fn handle_execute(
-    mut ctx: ExecuteContext,
-    msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
-    let action_response = call_action(
-        &mut ctx.deps,
-        &ctx.info,
-        &ctx.env,
-        &ctx.amp_ctx,
-        msg.as_ref(),
-    )?;
-
-    let res = match msg {
+#[andromeda_std::andr_execute_fn]
+pub fn execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, ContractError> {
+    match msg {
         {% unless minimal %}ExecuteMsg::Increment {} => execute::increment(ctx),
         ExecuteMsg::Reset { count } => execute::reset(ctx, count),{% endunless %}
         _ => ADOContract::default().execute(ctx, msg)
-    }?;
-
-    Ok(res
-        .add_submessages(action_response.messages)
-        .add_attributes(action_response.attributes)
-        .add_events(action_response.events))
+    }
 }
 
 {% unless minimal %}
@@ -138,84 +109,96 @@ pub mod query {
 
 #[cfg(test)]
 mod tests {% raw %}{{% endraw %}{% unless minimal %}
-    use super::*;
-    use andromeda_std::testing::mock_querier::MOCK_KERNEL_CONTRACT;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coins, from_json};
+use super::*;
+use andromeda_std::testing::mock_querier::{mock_dependencies_custom, MOCK_KERNEL_CONTRACT};
+use cosmwasm_std::testing::{mock_env, mock_info};
+use cosmwasm_std::{coins, from_json};
 
-    #[test]
-    fn proper_initialization() {
-        let mut deps = mock_dependencies();
+#[test]
+fn proper_initialization() {
+    let mut deps = mock_dependencies_custom(&[]);
 
-        let msg = InstantiateMsg {
-            count: 17,
-            kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
-            owner: None,
-        };
-        let info = mock_info("creator", &coins(1000, "earth"));
+    let msg = InstantiateMsg {
+        count: 17,
+        kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
+        owner: None,
+    };
+    let info = mock_info("creator", &coins(1000, "earth"));
 
-        // we can just call .unwrap() to assert this was a success
-        let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
-        assert_eq!(0, res.messages.len());
+    // we can just call .unwrap() to assert this was a success
+    let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+    assert_eq!(0, res.messages.len());
 
-        // it worked, let's query the state
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: GetCountResponse = from_json(&res).unwrap();
-        assert_eq!(17, value.count);
+    // it worked, let's query the state
+    let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
+    let value: GetCountResponse = from_json(&res).unwrap();
+    assert_eq!(17, value.count);
+}
+
+#[test]
+fn increment() {
+    let mut deps = mock_dependencies_custom(&[]);
+
+    let msg = InstantiateMsg {
+        count: 17,
+        kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
+        owner: None,
+    };
+    let info = mock_info("creator", &coins(2, "token"));
+    let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+
+    // cannot send funds
+    let nonpayable_info = mock_info("creator", &coins(2, "token"));
+    let msg = ExecuteMsg::Increment {};
+    let res = execute(deps.as_mut(), mock_env(), nonpayable_info, msg);
+    assert!(res.is_err());
+
+    // beneficiary can release it
+    let info = mock_info("anyone", &[]);
+    let msg = ExecuteMsg::Increment {};
+    let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
+
+    // should increase counter by 1
+    let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
+    let value: GetCountResponse = from_json(&res).unwrap();
+    assert_eq!(18, value.count);
+}
+
+#[test]
+fn reset() {
+    let mut deps = mock_dependencies_custom(&[]);
+
+    let msg = InstantiateMsg {
+        count: 17,
+        kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
+        owner: None,
+    };
+    let info = mock_info("creator", &coins(2, "token"));
+    let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+
+    // beneficiary can release it
+    let unauth_info = mock_info("anyone", &coins(2, "token"));
+    let msg = ExecuteMsg::Reset { count: 5 };
+    let res = execute(deps.as_mut(), mock_env(), unauth_info, msg);
+    match res {
+        Err(ContractError::Unauthorized {}) => {}
+        _ => panic!("Must return unauthorized error"),
     }
 
-    #[test]
-    fn increment() {
-        let mut deps = mock_dependencies();
+    // cannot send funds
+    let nonpayable_info = mock_info("creator", &coins(2, "token"));
+    let msg = ExecuteMsg::Reset { count: 5 };
+    let res = execute(deps.as_mut(), mock_env(), nonpayable_info, msg);
+    assert!(res.is_err());
 
-        let msg = InstantiateMsg {
-            count: 17,
-            kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
-            owner: None,
-        };
-        let info = mock_info("creator", &coins(2, "token"));
-        let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+    // only the original creator can reset the counter
+    let auth_info = mock_info("creator", &[]);
+    let msg = ExecuteMsg::Reset { count: 5 };
+    let _res = execute(deps.as_mut(), mock_env(), auth_info, msg).unwrap();
 
-        // beneficiary can release it
-        let info = mock_info("anyone", &coins(2, "token"));
-        let msg = ExecuteMsg::Increment {};
-        let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
-
-        // should increase counter by 1
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: GetCountResponse = from_json(&res).unwrap();
-        assert_eq!(18, value.count);
-    }
-
-    #[test]
-    fn reset() {
-        let mut deps = mock_dependencies();
-
-        let msg = InstantiateMsg {
-            count: 17,
-            kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
-            owner: None,
-        };
-        let info = mock_info("creator", &coins(2, "token"));
-        let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
-
-        // beneficiary can release it
-        let unauth_info = mock_info("anyone", &coins(2, "token"));
-        let msg = ExecuteMsg::Reset { count: 5 };
-        let res = execute(deps.as_mut(), mock_env(), unauth_info, msg);
-        match res {
-            Err(ContractError::Unauthorized {}) => {}
-            _ => panic!("Must return unauthorized error"),
-        }
-
-        // only the original creator can reset the counter
-        let auth_info = mock_info("creator", &coins(2, "token"));
-        let msg = ExecuteMsg::Reset { count: 5 };
-        let _res = execute(deps.as_mut(), mock_env(), auth_info, msg).unwrap();
-
-        // should now be 5
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: GetCountResponse = from_json(&res).unwrap();
-        assert_eq!(5, value.count);
+    // should now be 5
+    let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
+    let value: GetCountResponse = from_json(&res).unwrap();
+    assert_eq!(5, value.count);
 }
 {% endunless %}}
