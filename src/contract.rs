@@ -147,8 +147,14 @@ fn increment() {
     let info = mock_info("creator", &coins(2, "token"));
     let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
+    // cannot send funds
+    let nonpayable_info = mock_info("creator", &coins(2, "token"));
+    let msg = ExecuteMsg::Increment {};
+    let res = execute(deps.as_mut(), mock_env(), nonpayable_info, msg);
+    assert!(res.is_err());
+
     // beneficiary can release it
-    let info = mock_info("anyone", &coins(2, "token"));
+    let info = mock_info("anyone", &[]);
     let msg = ExecuteMsg::Increment {};
     let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
 
@@ -179,8 +185,14 @@ fn reset() {
         _ => panic!("Must return unauthorized error"),
     }
 
+    // cannot send funds
+    let nonpayable_info = mock_info("creator", &coins(2, "token"));
+    let msg = ExecuteMsg::Reset { count: 5 };
+    let res = execute(deps.as_mut(), mock_env(), nonpayable_info, msg);
+    assert!(res.is_err());
+
     // only the original creator can reset the counter
-    let auth_info = mock_info("creator", &coins(2, "token"));
+    let auth_info = mock_info("creator", &[]);
     let msg = ExecuteMsg::Reset { count: 5 };
     let _res = execute(deps.as_mut(), mock_env(), auth_info, msg).unwrap();
 
